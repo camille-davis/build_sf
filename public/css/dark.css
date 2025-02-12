@@ -1,0 +1,15 @@
+:root {
+    --shade-one: #000;
+    --shade-two: #000911;
+    --shade-three: #001018;
+    --shade-four: #101820;
+    --shade-five: #092030;
+    --text-one: #ccc;
+    --text-two: #eee;
+    --link-color: #299;
+    --shadow-color: rgb(0 0 0 / 0%);
+}
+
+.prompt-container {
+    background: rgb(10 10 18 / 90%);
+}
