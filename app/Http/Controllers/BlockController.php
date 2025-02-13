@@ -3,120 +3,79 @@
 namespace App\Http\Controllers;
 
 use App\Models\Block;
-use App\Models\Page;
-use App\Models\Settings;
 use Illuminate\Http\Request;
 use Stevebauman\Purify\Facades\Purify;
 
 class BlockController extends Controller
 {
-    public function __construct()
-    {
-        $this->settings = Settings::find(1);
-    }
-
     public function create(Request $request)
     {
-
         $request->validate([
             'location' => 'max:120|nullable',
-            'current_page' => 'numeric|nullable',
         ]);
 
-        $block = Block::createBlank($request->input('location'));
+        // Create an empty block in the given location.
+        Block::createBlank($request->input('location'));
 
-        $page = null;
-        if ($request->current_page != '') {
-            $page = Page::find($request->current_page);
-        }
-        if (! $page) {
-            $redirect = '/#footer';
-        } else {
-            $redirect = '/' . $page->slug . '#footer';
+        // Send success response to JS.
+        if ($request->header('Content-Type') === 'application/json') {
+            // TODO
         }
 
-        if ($request->header('Content-Type') !== 'application/json') {
-            return redirect($redirect);
-        }
-        // TODO if json
+        // If no JS, refresh the page to display the new block.
+        return redirect(url()->previous() . '#footer');
     }
 
     public function updateMultiple(Request $request)
     {
+        // Get block ids.
+        $block_ids = explode(',', $request->input('block_ids'));
 
-        $request->validate([
-            'type[*]' => 'max:120|nullable',
-            'body[*]' => 'max:10000|nullable',
-        ]);
+        // Create validation rules, and validate request.
+        $rules = [];
+        foreach($block_ids as $id) {
+            $rules['block_' . $id . '_type'] = 'max:120|nullable';
+            $rules['block_' . $id . '_body'] = 'max:10000|nullable';
+        }
+        $request->validate($rules);
 
-        $keys = explode(' ', $request->input('keys'));
-
-        foreach ($keys as $id) {
+        // Update each block.
+        foreach ($block_ids as $id) {
             $block = Block::find($id);
-            if (! $block) {
-                abort(404); // TODO
+            if (!$block) {
+                return response()->json([
+                    'errors' => [
+                        '0' => 'Error: the content you are trying to edit does not exist. Please refresh the page and try again.'
+                    ]
+                ], 404);
             }
 
-            $body_key = 'body[' . $id . ']';
-            $type_key = 'type[' . $id . ']';
-
             $block->update([
-                'type' => Purify::clean($request->input($type_key)),
-                'body' => Purify::clean($request->input($body_key)),
+                'type' => Purify::clean($request->input('block_' . $id . '_type')),
+                'body' => Purify::clean($request->input('block_' . $id . '_body')),
             ]);
         }
 
-        if ($request->header('Content-Type') !== 'application/json') {
-            // TODO
+        // Send success response to JS.
+        if ($request->header('Content-Type') === 'application/json') {
+            return response()->json(['success' => 'Block was successfully updated.'], 200);
         }
 
-        return response()->json(['success' => 'success'], 200);
-    }
-
-    public function moveDown(Request $request, $id)
-    {
-        Section::moveDown($id);
-
-        if ($request->header('Content-Type') !== 'application/json') {
-            // TODO
-        }
-
-        return response()->json(['success' => 'success'], 200);
-    }
-
-    public function moveUp(Request $request, $id)
-    {
-        Section::moveUp($id);
-
-        if ($request->header('Content-Type') !== 'application/json') {
-            // TODO
-        }
-
-        return response()->json(['success' => 'success'], 200);
+        // If no JS, refresh the page to show the blocks were updated.
+        return redirect(url()->previous());
     }
 
     public function discard(Request $request, $id)
     {
-
-        $request->validate([
-            'current_page' => 'numeric|nullable',
-        ]);
-
+        // Delete the block.
         Block::deleteAndShift($id);
 
-        if ($request->current_page != '') {
-            $page = Page::find($request->current_page);
-        }
-        if (! isset($page) || ! $page) {
-            $redirect = '/#footer';
-        } else {
-            $redirect = '/' . $page->slug . '#footer';
+        // Send success response to JS.
+        if ($request->header('Content-Type') === 'application/json') {
+            // TODO
         }
 
-        if ($request->header('Content-Type') !== 'application/json') {
-            return redirect($redirect);
-        }
-
-        return response()->json(['success' => 'success'], 200);
+        // If no JS, refresh the page to show the block was deleted.
+        return redirect(url()->previous() . '#footer');
     }
 }

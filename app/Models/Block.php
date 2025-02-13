@@ -4,30 +4,38 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+// Blocks display site-wide, user-editable content in a given location (e.g. 'footer').
 class Block extends Model
 {
     protected $fillable = ['location', 'type', 'weight', 'body'];
 
+    // Get all blocks associated with the location, in the order that they were created.
     public static function getAllInLocation($location = null)
     {
-        if (! $location) {
+        // If no location, get all blocks.
+        if (!$location) {
             return Block::all();
         }
 
         return Block::where('location', $location)->orderBy('weight', 'ASC')->get();
     }
 
+    // Create a new block with placeholder content.
     public static function createBlank($location)
     {
-        $blocks = Block::where('location', $location)->orderBy('weight', 'ASC')->get();
 
+        // Get the existing count of blocks for that location.
+        $blocks = Block::where('location', $location)->orderBy('weight', 'ASC')->get();
+        $count = count($blocks);
+
+        // Create a blank block.
         $block = Block::create([
             'body' => '<p>Add your content here!</p>',
             'type' => 'basic',
             'location' => $location,
         ]);
 
-        $count = count($blocks);
+        // Set its weight by incrementing the last block's weight.
         if ($count !== 0) {
             $lastBlock = $blocks[$count - 1];
             $block->weight = $lastBlock->weight + 1;
@@ -36,65 +44,13 @@ class Block extends Model
         }
 
         $block->save();
-
         return $block;
     }
 
-    public static function moveUp($id)
-    {
-        $section = Section::find($id);
-        if (! $section) {
-            return; // TODO
-        }
-
-        $sections = Section::getAllInPage($section->page_id);
-
-        $previousSection = null;
-        if (isset($sections[$section->weight - 1])) {
-            $previousSection = $sections[$section->weight - 1];
-        }
-        if (! $previousSection) {
-            return;
-        }
-
-        $section->weight -= 1;
-        $section->save();
-
-        $previousSection->weight += 1;
-        $previousSection->save();
-    }
-
-    public static function moveDown($id)
-    {
-        $section = Section::find($id);
-        if (! $section) {
-            return; // TODO
-        }
-
-        $sections = Section::getAllInPage($section->page_id);
-
-        $nextSection = null;
-        if (isset($sections[$section->weight + 1])) {
-            $nextSection = $sections[$section->weight + 1];
-        }
-        if (! $nextSection) {
-            return;
-        }
-
-        $section->weight += 1;
-        $section->save();
-
-        $nextSection->weight -= 1;
-        $nextSection->save();
-    }
-
+    // Delete a block and shift the other blocks' weights.
     public static function deleteAndShift($id)
     {
         $block = Block::find($id);
-        if (! $block) {
-            return; // TODO
-        }
-
         $blocks = Block::getAllInLocation($block->location);
 
         $i = $block->weight + 1;
