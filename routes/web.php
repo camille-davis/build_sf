@@ -27,7 +27,7 @@ Route::group(['middleware' => 'throttle:100,1'], function () {
 
         // Page sections
         Route::post('admin/section', '\App\Http\Controllers\SectionController@create');
-        Route::put('admin/section/{id}', '\App\Http\Controllers\SectionController@update');
+        Route::post('admin/section/{id}', '\App\Http\Controllers\SectionController@update');
         Route::delete('admin/section/{id}', '\App\Http\Controllers\SectionController@discard');
         Route::patch('admin/section/{id}/up', '\App\Http\Controllers\SectionController@moveUp');
         Route::patch('admin/section/{id}/down', '\App\Http\Controllers\SectionController@moveDown');

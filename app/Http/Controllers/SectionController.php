@@ -2,42 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Page;
-use App\Models\Project;
-use App\Models\Review;
 use App\Models\Section;
-use App\Models\Settings;
 use Illuminate\Http\Request;
 use Stevebauman\Purify\Facades\Purify;
 
 class SectionController extends Controller
 {
-    public function __construct()
-    {
-        $this->settings = Settings::find(1);
-        $this->reviews = Review::where('approved', true)->orderBy('created_at', 'desc')->get();
-
-        $this->projects = Project::getAll();
-
-        $url = config('app.url');
-        $this->domain = preg_replace('/https?:\/\//i', '', $url);
-    }
-
     public function create(Request $request)
     {
         $request->validate([
             'page_id' => 'numeric',
         ]);
 
-        $section = Section::createBlank($request->page_id);
+        // Create an empty section in the given page.
+        Section::createBlank($request->page_id);
 
-        $page = Page::find($request->page_id);
-        $redirect = '/' . $page->slug;
-
-        if ($request->header('Content-Type') !== 'application/json') {
-            return redirect($redirect);
+        // Send success response to JS.
+        if ($request->header('Content-Type') === 'application/json') {
+            // TODO
         }
-        // TODO if json
+
+        // If no JS, refresh the page to display the new section.
+        return redirect(url()->previous());
     }
 
     public function update(Request $request, $id)
@@ -50,11 +36,15 @@ class SectionController extends Controller
             'image_ids' => 'max:120|nullable',
         ]);
 
+        // Update the section.
         $section = Section::find($id);
-        if (! $section) {
-            abort(404); // TODO
+        if (!$section) {
+            return response()->json([
+                'errors' => [
+                    '0' => 'Error: the section you are trying to edit does not exist. Please refresh the page and try again.'
+                ]
+            ], 404);
         }
-
         $section->update([
             'title' => $request->input('title'),
             'slug' => Purify::clean($request->input('slug')),
@@ -63,43 +53,54 @@ class SectionController extends Controller
             'image_ids' => Purify::clean($request->input('image_ids')),
         ]);
 
-        if ($request->header('Content-Type') !== 'application/json') {
-            // TODO
+        // Send success response to JS.
+        if ($request->header('Content-Type') === 'application/json') {
+            return response()->json([
+                'redirect' => url()->previous(),
+            ], 301);
         }
 
-        return response()->json(['success' => 'success'], 200);
+        // If no JS, refresh the page to show the section content was updated.
+        return redirect(url()->previous());
     }
 
     public function moveDown(Request $request, $id)
     {
         Section::moveDown($id);
 
-        if ($request->header('Content-Type') !== 'application/json') {
-            // TODO
+        // Send success response to JS.
+        if ($request->header('Content-Type') === 'application/json') {
+            return response()->json(['success' => 'Section was successfully moved down.'], 200);
         }
 
-        return response()->json(['success' => 'success'], 200);
+        // If no JS, refresh the page to show section order was updated.
+        return redirect(url()->previous());
     }
 
     public function moveUp(Request $request, $id)
     {
         Section::moveUp($id);
 
-        if ($request->header('Content-Type') !== 'application/json') {
-            // TODO
+        // Send success response to JS.
+        if ($request->header('Content-Type') === 'application/json') {
+            return response()->json(['success' => 'Section was successfully moved up.'], 200);
         }
 
-        return response()->json(['success' => 'success'], 200);
+        // If no JS, refresh the page to show section order was updated.
+        return redirect(url()->previous());
     }
 
     public function discard(Request $request, $id)
     {
+        // Delete the section.
         Section::deleteAndShift($id);
 
+        // Send success response to JS.
         if ($request->header('Content-Type') === 'application/json') {
-            return response()->json(['success' => 'success'], 200);
+            return response()->json(['success' => 'Section was successfully deleted.'], 200);
         }
 
-        return redirect('/');
+        // If no JS, refresh the page to show the section was deleted.
+        return redirect(url()->previous());
     }
 }
