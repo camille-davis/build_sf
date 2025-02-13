@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+// Sidewide settings.
 class Settings extends Model
 {
     protected $fillable = [

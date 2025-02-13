@@ -4,14 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Settings;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Stevebauman\Purify\Facades\Purify;
 
 class SettingsController extends Controller
 {
     public function __construct()
     {
-
         $this->settings = Settings::find(1);
     }
 
@@ -47,11 +45,11 @@ class SettingsController extends Controller
 
         $settings = Settings::find(1);
 
+        // If no existing settings, create it.
         if (! $settings) {
             $settings = new Settings;
             $settings->save();
         }
-        Log::info($request);
 
         $settings->update([
             'name' => Purify::clean($request->input('name')),
@@ -75,5 +73,4 @@ class SettingsController extends Controller
 
         return redirect('/admin/settings')->with('success', 'Your website settings were successfully updated.');
     }
-    //
 }
