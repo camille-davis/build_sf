@@ -1,4 +1,4 @@
-const changeNavOpacity = (nav, r, g, b) => {
+let changeNavOpacity = (nav, r, g, b) => {
   const firstSection = document.querySelector('.section')
 
   const scrollTop = window.pageYOffset || (document.documentElement || document.body.parentNode || document.body).scrollTop
@@ -11,7 +11,7 @@ const changeNavOpacity = (nav, r, g, b) => {
   nav.style.backgroundColor = 'rgba(' + r + ',' + g + ',' + b + ',' + (scrollTop / window.innerHeight) + ')'
 }
 
-const transparentNav = () => {
+let transparentNav = () => {
   // Get nav background as rgb
 
   const nav = document.getElementById('nav')
@@ -31,7 +31,7 @@ const transparentNav = () => {
   })
 }
 
-const dropdownNav = () => {
+let dropdownNav = () => {
   toggle = document.getElementById('toggle')
   links = document.getElementById('links')
   nav = document.querySelector('nav')
@@ -65,7 +65,7 @@ const dropdownNav = () => {
 
 /* Slideshow */
 
-const getCurrentSlide = (slides) => {
+let getCurrentSlide = (slides) => {
   let current
   for (i = 0; i < slides.length; i++) {
     if (slides[i].classList.contains('hidden')) {
@@ -81,7 +81,7 @@ const getCurrentSlide = (slides) => {
   return current
 }
 
-const switchToSlide = (slides, upcomingSlide, smooth) => {
+let switchToSlide = (slides, upcomingSlide, smooth) => {
   const current = getCurrentSlide(slides)
 
   if ((!slides[current]) || (!slides[current].complete) || (!upcomingSlide.complete) || (slides[current] == upcomingSlide)) {
@@ -115,7 +115,7 @@ const switchToSlide = (slides, upcomingSlide, smooth) => {
   })
 }
 
-const showNextSlide = (slides, smooth) => {
+let showNextSlide = (slides, smooth) => {
   const current = getCurrentSlide(slides)
 
   let next
@@ -128,7 +128,7 @@ const showNextSlide = (slides, smooth) => {
   switchToSlide(slides, slides[next], smooth)
 }
 
-const showPreviousSlide = (slides, smooth) => {
+let showPreviousSlide = (slides, smooth) => {
   const current = getCurrentSlide(slides)
 
   let previous
@@ -141,7 +141,7 @@ const showPreviousSlide = (slides, smooth) => {
   switchToSlide(slides, slides[previous], smooth)
 }
 
-const activateSliders = () => {
+let activateSliders = () => {
   document.querySelectorAll('.slider').forEach((slider) => {
     slider.classList.add('active')
     const slides = slider.querySelectorAll('.slide')
@@ -202,7 +202,7 @@ const activateSliders = () => {
 
 /* Collapsible Sections */
 
-const getChildrenHeight = (el) => {
+let getChildrenHeight = (el) => {
   let height = 0
   for (let i = 0; i < el.children.length; i++) {
     const style = window.getComputedStyle(el.children[i])
@@ -217,7 +217,7 @@ const getChildrenHeight = (el) => {
 
 /* Collapsible Elements */
 
-const animateCollapse = (e, el) => {
+let animateCollapse = (e, el) => {
   e.preventDefault()
 
   const inside = el.querySelector('.inside')
@@ -246,7 +246,7 @@ const animateCollapse = (e, el) => {
   })
 }
 
-const activateCollapsible = () => {
+let activateCollapsible = () => {
   document.querySelectorAll('.collapsible').forEach((el) => {
     el.classList.add('collapsed')
 
@@ -262,7 +262,7 @@ const activateCollapsible = () => {
   })
 }
 
-const addCaptchaError = (form) => {
+let addCaptchaError = (form) => {
   form.addEventListener('submit', function (e) {
     if (this.querySelector('.g-recaptcha-response').value === '') {
       e.preventDefault()

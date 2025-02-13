@@ -234,7 +234,7 @@ const send = (form) => {
     }
 
     if (input.name == 'title') {
-      input.value = strip(input.value)
+      input.value = strip(input.getAttribute('value'))
     }
 
     payload[input.name] = input.value
@@ -244,6 +244,7 @@ const send = (form) => {
   xhr.open(method, form.action)
   xhr.setRequestHeader('X-CSRF-TOKEN', csrf)
   xhr.setRequestHeader('Content-Type', 'application/json')
+  xhr.setRequestHeader('Accept', 'application/json')
   xhr.send(JSON.stringify(payload))
 
   return xhr
@@ -269,11 +270,14 @@ const moveSectionUp = (e, container) => {
         return
       }
 
+      if (container.previousElementSibling === null) {
+        return
+      }
       container.parentNode.insertBefore(container, container.previousElementSibling)
 
       const sectionID = container.id.match(/\d+/)[0]
       const link = document.getElementById(`link-section-${sectionID}`)
-      if (!link) {
+      if (!link || link.previousElementSibling === null) {
         return
       }
       document.getElementById('links').insertBefore(link, link.previousElementSibling)
@@ -1202,6 +1206,10 @@ const addGlobalListeners = () => {
       const xhr = send(form)
       xhr.onreadystatechange = () => {
         if (xhr.readyState === 4) {
+          if (xhr.status === 301) {
+            window.location = JSON.parse(xhr.response)['redirect'];
+            return
+          }
           if (xhr.status === 419) {
             const expirationPrompt = document.getElementById('expiration-prompt')
             openPrompt(expirationPrompt)
@@ -1215,10 +1223,8 @@ const addGlobalListeners = () => {
           if (xhr.status !== 200) {
             return
           }
-
           const updateMediaPrompt = document.getElementById('update-media')
-          if ((updateMediaPrompt) &&
-                    (updateMediaPrompt.classList.contains('active'))) {
+          if ((updateMediaPrompt) && (updateMediaPrompt.classList.contains('active'))) {
             updateMedia(updateMediaPrompt)
             closePrompt(updateMediaPrompt)
             return

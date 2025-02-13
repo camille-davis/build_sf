@@ -71,7 +71,7 @@ if (document.querySelector('body.page-14')) {
         } */
   }
 
-  animateCollapse = (e, el) => { // overwrite functions.js
+  animateCollapse = (e, el) => {
     e.preventDefault()
 
     const insideEl = el.querySelector('.inside')
