@@ -22,33 +22,33 @@ class WebController extends Controller
         $this->domain = preg_replace('/https?:\/\//i', '', $url);
     }
 
+    // Contact form functionality.
     public function contactUs(Request $request)
     {
-
-        if (! config('services.recaptcha.key')) {
-            request()->validate($request, [
-                'name' => 'max:205',
-                'email' => 'required|email|max:205',
-                'subject' => 'max:205',
-                'body' => 'required|max:10000',
-            ]);
-        } else {
-            request()->validate($request, [
-                'name' => 'max:205',
-                'email' => 'required|email|max:205',
-                'subject' => 'max:205',
-                'body' => 'required|max:10000',
-                'g-recaptcha-response' => 'required|recaptcha',
-            ]);
-        }
-
+        // Check if an email address exists to receive the message.
         if (! $this->settings || ! $this->settings->email) {
             return redirect('/')->withErrors(['email' => 'No contact email has been set.']);
         }
 
+        // Set validation rules.
+        $rules = [
+            'name' => 'max:205',
+            'email' => 'required|email|max:205',
+            'subject' => 'max:205',
+            'body' => 'required|max:10000',
+        ];
+
+        // Add Captcha if enabled.
+        if (config('services.recaptcha.key')) {
+            $rules['g-recaptcha-response'] = 'required|recaptcha';
+        }
+
+        // Validate the request.
+        request()->validate($request, $rules);
+
+        // Send the message.
         Mail::send(
-            'message',
-            [
+            'message', [
                 'name' => Purify::clean(request('name')),
                 'email' => Purify::clean(request('email')),
                 'subject' => Purify::clean(request('subject')),
@@ -67,38 +67,38 @@ class WebController extends Controller
 
     public function submitReview(Request $request)
     {
+        // Set validation rules.
+        $rules = [
+            'name' => 'required|max:205',
+            'review' => 'required|max:10000',
+        ];
 
-        if (! config('services.recaptcha.key')) {
-            request()->validate($request, [
-                'name' => 'required|max:205',
-                'review' => 'required|max:10000',
-            ]);
-        } else {
-            request()->validate($request, [
-                'name' => 'required|max:205',
-                'review' => 'required|max:10000',
-                'g-recaptcha-response' => 'required|recaptcha',
-            ]);
+        // Add Captcha if enabled.
+        if (config('services.recaptcha.key')) {
+            $rules['g-recaptcha-response'] = 'required|recaptcha';
         }
 
-        $name = Purify::clean(request('name'));
+        // Validate the request.
+        request()->validate($request, $rules);
 
-        $review_input = Purify::clean(request('review'));
-        $sentences = preg_split('/\r\n|\r|\n/', $review_input);
+        // Turn line breaks into paragraphs.
+        $paragraphs = preg_split('/\r\n|\r|\n/', Purify::clean(request('review')));
         $review = '';
-        foreach ($sentences as $sentence) {
-            if ($sentence == '') {
+        foreach ($paragraphs as $paragraph) {
+            if ($paragraph == '') {
                 continue;
             }
-            $paragraph = '<p>' . $sentence . '</p>';
-            $review .= $paragraph;
+            $processed = '<p>' . $paragraph . '</p>';
+            $review .= $processed;
         }
 
+        // Process additional submission data.
+        $name = Purify::clean(request('name'));
         $id = Str::uuid()->toString();
 
+        // Send new review notification.
         Mail::send(
-            'submission',
-            [
+            'submission', [
                 'id' => $id,
                 'name' => $name,
                 'review' => $review,
@@ -110,6 +110,7 @@ class WebController extends Controller
             }
         );
 
+        // Save review data.
         Review::create([
             'id' => $id,
             'name' => $name,
@@ -121,13 +122,13 @@ class WebController extends Controller
 
     public function approveReview($id)
     {
-
+        // Find review for the given ID.
         $review = Review::where('id', $id)->first();
-
         if ($review === null) {
             abort(404);
         }
 
+        // Mark review as approved.
         $review->update(['approved' => true]);
 
         return redirect('/')->with(
@@ -138,15 +139,14 @@ class WebController extends Controller
 
     public function discardReview($id)
     {
-
+        // Find review for the given ID.
         $review = Review::where('id', $id)->first();
-
         if ($review === null) {
             abort(404);
         }
 
+        // Delete it.
         $review->delete();
-
         return redirect('/')->with('success', 'The review was successfully discarded.');
     }
 }
