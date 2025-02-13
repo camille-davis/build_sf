@@ -22,9 +22,9 @@
     <div class="inner">
 
         <h1 id="logo">
-            <a href="{{ ($settings->nav_type == 'pages') ? '/' : '#' }}">
-                @if ($settings->logo_url != null)
-                <img src="{{ $settings->logo_url }}" alt="{{ $settings->name ?? '' }}" />
+            <a href="{{ isset($settings) && $settings->nav_type == 'pages' ? '/' : '#' }}">
+                @if (isset($settings) && $settings->logo_url != null)
+                <img src="{{ $settings->logo_url ?? '' }}" alt="{{ $settings->name ?? '' }}" />
                 @else
                 {{ $settings->name ?? '' }}
                 @endif
@@ -41,7 +41,7 @@
 
         <ul id="links">
 
-            @if ($settings->nav_type == 'pages')
+            @if (isset($settings) && $settings->nav_type == 'pages')
                 @foreach ($items as $item)
                 <li id="link-page-{{ $item->id ?? '' }}">
                     <a href="/{{ $item->slug ?? '' }}">{{ $item->title ?? '' }}</a>
@@ -66,7 +66,7 @@
 
         <ul id="social">
 
-            @if ($settings->show_social_in_nav == 1)
+            @if (isset($settings) && $settings->show_social_in_nav == 1)
 
                 @if ($settings->social_bandcamp != '')
                     <li>
