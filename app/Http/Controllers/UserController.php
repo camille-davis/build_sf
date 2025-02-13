@@ -9,11 +9,6 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function __construct()
-    {
-        $this->settings = Settings::find(1);
-    }
-
     public function update(Request $request)
     {
         $request->validate([
@@ -42,7 +37,7 @@ class UserController extends Controller
     {
         return view('user', [
             'user' => Auth::user(),
-            'settings' => $this->settings,
+            'settings' => Settings::find(1),
             'classes' => 'page',
         ]);
     }

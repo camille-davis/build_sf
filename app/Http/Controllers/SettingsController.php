@@ -8,15 +8,10 @@ use Stevebauman\Purify\Facades\Purify;
 
 class SettingsController extends Controller
 {
-    public function __construct()
-    {
-        $this->settings = Settings::find(1);
-    }
-
     public function showSettingsForm()
     {
         return view('settings', [
-            'settings' => $this->settings,
+            'settings' => Settings::find(1),
             'classes' => 'page',
         ]);
     }

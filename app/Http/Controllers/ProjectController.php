@@ -15,8 +15,6 @@ class ProjectController extends Controller
 {
     public function __construct()
     {
-        $this->settings = Settings::find(1);
-        $this->pages = Page::getAll();
         $this->projects = Project::getAll();
     }
 
@@ -40,8 +38,9 @@ class ProjectController extends Controller
 
         // Get nav links and footer. TODO: move outside of Projects and consolidate with PageController code.
         // If nav is set to 'pages', get all pages for nav links.
-        if ($this->settings && $this->settings->nav_type == 'pages') {
-            $navLinks = $this->pages;
+        $settings = Settings::find(1);
+        if ($settings && $settings->nav_type == 'pages') {
+            $navLinks = Page::getAll();
 
         // Otherwise, if there's a homepage, default to homepage section links.
         } else {
@@ -55,7 +54,7 @@ class ProjectController extends Controller
         $footerBlocks = Block::getAllInLocation('footer');
 
         return view('project', [
-            'settings' => $this->settings,
+            'settings' => $settings,
             'navLinks' => $navLinks,
             'footerBlocks' => $footerBlocks,
             'project' => $project,

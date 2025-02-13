@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Review;
-use App\Models\Section;
 use App\Models\Settings;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Stevebauman\Purify\Facades\Purify;
@@ -14,16 +12,12 @@ class WebController extends Controller
 {
     public function __construct()
     {
-        $this->sections = Section::orderBy('weight', 'ASC')->get();
-        $this->reviews = Review::where('approved', true)->orderBy('created_at', 'desc')->get();
         $this->settings = Settings::find(1);
-
-        $url = config('app.url');
-        $this->domain = preg_replace('/https?:\/\//i', '', $url);
+        $this->domain = preg_replace('/https?:\/\//i', '', config('app.url'));
     }
 
     // Contact form functionality.
-    public function contactUs(Request $request)
+    public function contactUs()
     {
         // Check if an email address exists to receive the message.
         if (! $this->settings || ! $this->settings->email) {
@@ -44,7 +38,7 @@ class WebController extends Controller
         }
 
         // Validate the request.
-        request()->validate($request, $rules);
+        request()->validate($rules);
 
         // Send the message.
         Mail::send(
@@ -65,7 +59,7 @@ class WebController extends Controller
         return back()->with('success', 'Thanks for contacting us!');
     }
 
-    public function submitReview(Request $request)
+    public function submitReview()
     {
         // Set validation rules.
         $rules = [
@@ -79,7 +73,7 @@ class WebController extends Controller
         }
 
         // Validate the request.
-        request()->validate($request, $rules);
+        request()->validate($rules);
 
         // Turn line breaks into paragraphs.
         $paragraphs = preg_split('/\r\n|\r|\n/', Purify::clean(request('review')));

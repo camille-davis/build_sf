@@ -13,14 +13,6 @@ use Stevebauman\Purify\Facades\Purify;
 
 class PageController extends Controller
 {
-    public function __construct()
-    {
-        $this->settings = Settings::find(1);
-        $this->pages = Page::getAll();
-        $this->projects = Project::getAll();
-        $this->reviews = Review::getApproved();
-    }
-
     public function create()
     {
         $page = Page::createBlank();
@@ -47,8 +39,9 @@ class PageController extends Controller
         $sections = Section::getAll($page->id);
 
         // If nav is set to 'pages', get all pages for nav links.
-        if ($this->settings && $this->settings->nav_type == 'pages') {
-            $navLinks = $this->pages;
+        $settings = Settings::find(1);
+        if ($settings && $settings->nav_type == 'pages') {
+            $navLinks = Page::getAll();
 
         // Otherwise, if on homepage, default to homepage section links.
         } else if ($page->homepage) {
@@ -64,9 +57,9 @@ class PageController extends Controller
             'sections' => $sections,
             'footerBlocks' => $footerBlocks,
             'navLinks' => $navLinks,
-            'settings' => $this->settings,
-            'reviews' => $this->reviews,
-            'projects' => $this->projects,
+            'settings' => $settings,
+            'reviews' => Review::getApproved(),
+            'projects' => Project::getAll(),
         ]);
     }
 
