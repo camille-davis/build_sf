@@ -48,9 +48,9 @@ Route::group(['middleware' => 'throttle:100,1'], function () {
         Route::post('admin/media', '\App\Http\Controllers\MediaController@uploadMedia');
         Route::put('admin/media/{id}', '\App\Http\Controllers\MediaController@updateMedia');
         Route::delete('admin/media/{id}', '\App\Http\Controllers\MediaController@deleteMedia');
-        Route::get('admin/media-data/', '\App\Http\Controllers\MediaController@getMediaData');
-        Route::get('admin/media-data/{stringIDs}', '\App\Http\Controllers\MediaController@getMediaData');
-        Route::get('admin/media-data/project/{projectID}', '\App\Http\Controllers\MediaController@getProjectMediaData');
+        Route::get('admin/media-data/', '\App\Http\Controllers\MediaController@getMedia');
+        Route::get('admin/media-data/{stringIDs}', '\App\Http\Controllers\MediaController@getMedia');
+        Route::get('admin/media-data/project/{projectID}', '\App\Http\Controllers\MediaController@getProjectMedia');
     });
 
     // Submit messages and reviews

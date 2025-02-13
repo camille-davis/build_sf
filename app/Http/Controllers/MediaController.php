@@ -6,74 +6,76 @@ use App\Models\Media;
 use App\Models\Project;
 use App\Models\Settings;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class MediaController extends Controller
 {
     public function __construct()
     {
-        $this->media = Media::orderBy('created_at', 'desc')->get();
-        $this->settings = Settings::find(1);
+        $this->mediaByDate = Media::orderBy('created_at', 'desc')->get();
     }
 
     public function showMediaForm()
     {
         return view('media', [
             'classes' => 'page',
-            'media' => $this->media,
-            'settings' => $this->settings,
+            'media' => $this->mediaByDate,
+            'settings' => Settings::find(1),
         ]);
     }
 
-    public function getMediaData($stringIDs = null)
+    // Get media from IDs in a given order.
+    public function getMedia($stringIDs = null)
     {
+        // If no order given, return media by order of upload date.
         if (! $stringIDs) {
-            return $this->media;
+            return $this->mediaByDate;
         }
 
+        // Return media in the requested order.
         $ids = explode(' ', $stringIDs);
         $media = Media::findManyInOrder($ids);
-
         return $media;
     }
 
-    public function getProjectMediaData($projectID)
+    // Get a given project's media.
+    public function getProjectMedia($projectID)
     {
         $media = Media::where('project_id', $projectID)->get();
-
         return $media;
     }
 
     public function uploadMedia(Request $request)
     {
-
         $request->validate([
             'file.*' => 'required|image|mimes:jpeg,png|max:2000',
             'project_id' => 'nullable',
         ]);
 
         $projectID = $request->input('project_id');
-        $project = Project::find($projectID);
 
-        $files = $request->file('file');
-
+        /// Loop through the uploaded files.
         if ($request->hasFile('file')) {
+            $files = $request->file('file');
             foreach ($files as $file) {
+
+                // Generate filename (without extension).
                 $rawFilename = uniqid();
 
                 $mime = $file->getMimeType();
+
+                // Process PNG.
                 if ($mime == 'image/png') {
+
+                    // Create PNG image.
                     $filename = $rawFilename . '.png';
                     $img = imagecreatefrompng($file);
-
                     imagealphablending($img, true);
                     imagesavealpha($img, true);
 
-                    imagepng($img, storage_path('app/public/media/' . $filename));
-
+                    // Create PNG thumbnail.
                     $width = imagesx($img);
                     $height = imagesy($img);
-
                     if ($width > 767) {
                         $newWidth = 767;
                         $newHeight = intval(767 * $height / $width);
@@ -87,11 +89,18 @@ class MediaController extends Controller
                     } else {
                         $thumb = $img;
                     }
+
+                    // Save PNG files.
+                    imagepng($img, storage_path('app/public/media/' . $filename));
                     imagepng($thumb, storage_path('app/public/media/' . $rawFilename . '_thumb.png'));
                 } else {
+
+                    // Process JPG. Todo: add additional image compatibility.
+                    // Create JPG image.
                     $filename = $rawFilename . '.jpg';
                     $img = imagecreatefromjpeg($file);
-                    imagejpeg($img, storage_path('app/public/media/' . $filename), 100);
+
+                    // Create JPG thumbnail.
                     $width = imagesx($img);
                     if ($width > 767) {
                         $thumb = imagescale($img, 767);
@@ -99,8 +108,12 @@ class MediaController extends Controller
                         $thumb = $img;
                     }
 
+                    // Save JPG files.
+                    imagejpeg($img, storage_path('app/public/media/' . $filename), 100);
                     imagejpeg($thumb, storage_path('app/public/media/' . $rawFilename . '_thumb.jpg'), 100);
                 }
+
+                // Clear memory.
                 if (isset($img)) {
                     imagedestroy($img);
                 }
@@ -108,7 +121,8 @@ class MediaController extends Controller
                     imagedestroy($thumb);
                 }
 
-                if (! $project) {
+                // If no project ID given, create a Media entry with no project ID.
+                if (! $projectID) {
                     Media::create([
                         'filename' => $filename,
                         'alt' => '',
@@ -117,15 +131,18 @@ class MediaController extends Controller
                     continue;
                 }
 
+                // Otherwise create a Media entry associated with the project.
                 Media::createInProject($projectID, $filename);
             }
         }
 
-        if (! $project) {
+        // If no project ID, redirect to media admin page.
+        if (! $projectID) {
             return redirect('/admin/media');
         }
 
-        return redirect('/project/' . $project->slug);
+        // Otherwise redirect to the project page.
+        return redirect('/project/' . Project::find($projectID)->slug);
     }
 
     public function updateMedia(Request $request, $id)
@@ -137,65 +154,50 @@ class MediaController extends Controller
 
         $media = Media::find($id);
         if (! $media) {
-            abort(404); // TODO
+            abort(404); // TODO: return specific error.
         }
 
+        // Check if media is part of a project.
+        $projectID = $request->input('project_id');
+
+        // If project could not be found, show error. TODO: display on frontend.
+        if ($projectID && !Project::find($projectID)) {
+            return response()->json([
+                'errors' => [
+                    '0' => 'Error: that project does not exist.'
+                ]
+            ], 404);
+        }
+
+        // Update media.
         $media->update([
             'alt' => $request->input('alt'),
+            'project_id' => $projectID,
         ]);
 
-        $projectID = $request->input('project_id');
-        if ($projectID) {
-            $project = Project::find($projectID);
-            if ($project) {
-                $media->update([
-                    'project_id' => $projectID,
-                ]);
-            }
-        } else {
-            $media->update([
-                'project_id' => null,
-            ]);
+        // Send success message to JS.
+        if ($request->header('Content-Type') === 'application/json') {
+            return response()->json(['success' => 'Media successfully updated.'], 200);
         }
-
-        if ($request->header('Content-Type') !== 'application/json') {
-            // TODO
-        }
-
-        return response()->json(['success' => 'success'], 200);
     }
 
-    public function deleteMedia(Request $request, $id)
+    public function deleteMedia($id)
     {
-
-        if ($request->input('current_page')) {
-            $currentPage = $request->input('current_page');
-        }
-
+        // Delete the image and thumbnail from storage.
         $media = Media::find($id);
-
-        Storage::delete('public/media/' . $media->filename);
-
         $rawFilename = explode('.', $media->filename);
-        Storage::delete('public/media/' . $rawFilename[0] . '_thumb.' . $rawFilename[1]);
+        File::delete(storage_path('app/public/media/' . $media->filename));
+        File::delete(storage_path('app/public/media/' . $rawFilename[0] . '_thumb.' . $rawFilename[1]));
 
-        if ($media->project_id == '') {
+        // If media is part of a project, delete it and shift weight of other media in project.
+        if ($media->project_id) {
+            Media::deleteAndShift($id);
+        } else {
+
+            // Otherwise just delete the media.
             $media->delete();
-
-            return redirect('/admin/media');
         }
 
-        Media::deleteAndShift($media);
-
-        if (isset($currentPage) && $currentPage == 'media') {
-            return redirect('/admin/media');
-        }
-
-        $project = Project::find($media->project_id);
-        if (! $project) {
-            return redirect('/admin/media');
-        }
-
-        return redirect('/project/' . $project->slug);
+        return redirect(url()->previous());
     }
 }
