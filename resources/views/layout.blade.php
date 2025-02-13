@@ -63,7 +63,7 @@
             <x-footer :settings="$settings" :pageid="$page->id ?? null" :blocks="$footerBlocks"/>
 		</main>
         @auth
-            <x-user :settings="$settings" />
+            <x-tools :settings="$settings" />
             <script>
                 addLayoutListeners();
 
