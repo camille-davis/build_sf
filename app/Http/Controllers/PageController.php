@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Block;
 use App\Models\Page;
 use App\Models\Project;
 use App\Models\Review;
 use App\Models\Section;
-use App\Models\Settings;
+use App\Traits\SitewideDataTrait;
 use Illuminate\Http\Request;
 use Stevebauman\Purify\Facades\Purify;
 
 class PageController extends Controller
 {
+    use SitewideDataTrait;
+
     public function create()
     {
         $page = Page::createBlank();
@@ -33,34 +34,19 @@ class PageController extends Controller
             abort(404);
         }
 
-        // TODO get sections, nav, footer in model instead.
-
         // Get page sections.
         $sections = Section::getAll($page->id);
 
-        // If nav is set to 'pages', get all pages for nav links.
-        $settings = Settings::find(1);
-        if ($settings && $settings->nav_type == 'pages') {
-            $navLinks = Page::getAll();
-
-        // Otherwise, if on homepage, default to homepage section links.
-        } else if ($page->homepage) {
-            $navLinks = Section::getAllRaw($page->id);
-        }
-
-        // Get footer blocks.
-        $footerBlocks = Block::getAllInLocation('footer');
+        // Get sitewide data.
+        $sitewideData = $this->getSitewideData();
 
         // Display page.
-        return view('page', [
+        return view('page', array_merge([
             'page' => $page,
             'sections' => $sections,
-            'footerBlocks' => $footerBlocks,
-            'navLinks' => $navLinks,
-            'settings' => $settings,
             'reviews' => Review::getApproved(),
             'projects' => Project::getAll(),
-        ]);
+        ], $sitewideData));
     }
 
     public function update(Request $request, $id)

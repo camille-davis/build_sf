@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Block;
 use App\Models\Media;
-use App\Models\Page;
 use App\Models\Project;
-use App\Models\Section;
-use App\Models\Settings;
+use App\Traits\SitewideDataTrait;
 use Illuminate\Http\Request;
 use Stevebauman\Purify\Facades\Purify;
 
 class ProjectController extends Controller
 {
+    use SitewideDataTrait;
+
     public function __construct()
     {
         $this->projects = Project::getAll();
@@ -36,31 +35,14 @@ class ProjectController extends Controller
         $media = Media::where('project_id', $project->id)->orderBy('weight', 'ASC')->get();
         $featuredImage = Media::find($project->featured_image_id);
 
-        // Get nav links and footer. TODO: move outside of Projects and consolidate with PageController code.
-        // If nav is set to 'pages', get all pages for nav links.
-        $settings = Settings::find(1);
-        if ($settings && $settings->nav_type == 'pages') {
-            $navLinks = Page::getAll();
+        // Get sitewide data.
+        $sitewideData = $this->getSitewideData();
 
-        // Otherwise, if there's a homepage, default to homepage section links.
-        } else {
-            $homepage = Page::where('homepage', 1)->first();
-            if ($homepage !== null) {
-                $navLinks = Section::getAllRaw($homepage->id);
-            }
-        }
-
-        // Get footer blocks.
-        $footerBlocks = Block::getAllInLocation('footer');
-
-        return view('project', [
-            'settings' => $settings,
-            'navLinks' => $navLinks,
-            'footerBlocks' => $footerBlocks,
+        return view('project', array_merge([
             'project' => $project,
             'media' => $media,
             'featuredImage' => $featuredImage,
-        ]);
+        ], $sitewideData));
     }
 
     public function update(Request $request, $id)
